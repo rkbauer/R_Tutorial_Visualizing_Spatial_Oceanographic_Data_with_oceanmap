@@ -14,7 +14,7 @@ address:
   
 date: "February 10, 2020"
 ##bibliography: library.bib
-tags: Archival Tagging data, Satellite tags, Wildlife Computers, LOTEK
+tags: oceanography, remote-sensing, sattelite-imagery, spatial-data, sst, chla, ggplot, mapping, bathymetry
 
 
 output: 
@@ -30,303 +30,50 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
 ```{r}
 ## install or load package
-# install.packages("RchivalTag")
-library("RchivalTag")
+# install.packages("oceanmap")
+library("oceanmap")
 
 ## Package overview:
-?RchivalTag 
-help(package="RchivalTag") ## list of functions
+?oceanmap 
+help(package="oceanmap") ## list of functions
 ```
 
-### What are histogram files:
-Histogram data files (#####-Histos.csv files) are a summary data product of different tag models from `Wildlife computers` (WC; i.e. mk9, mk10, SPOT, SPLASH, miniPAT) that store recorded temperature and/or depth time series data in user-defined temperature and depth bins in user-specified summary intervals (6h, 12h, 24h).
-
-Since this data is stored as a csv file, you might be tempted to read in the data via R's `read.table` or `read.csv` functions:
-
-```{r, collapse=TRUE}
-## read example histogram data:
-hist_file <- system.file("example_files/104659-Histos.csv",package="RchivalTag")
-h <- read.csv(hist_file)
-head(h)
-```
-I would not recommend this for data processing but it's actually a good way to understand the formatting of WC histogram files. As you can see, each row contains some general Information about the DeployID, Ptt, Source, Tag Type (Instr). We can also see the Date column that holds the starting point of each histogram data set in UTC. In our case the tag was probably deployed shortly before "08:10:00 07-Aug-2016", that's when the tag started to record data. The remaining columns are likewise interesting. `NumBins` gives the number of user defined bins, Bin1-72 holds the actual binned histogram data. We can see that only Bin1-Bin12 have records in the first row and that these records correspond to the TATLIMITS. The TATLIMITS are the Time-AT-Temperature LIMITS, bin breaks or ticks. In the second row, we have the actual histogram data stored in the first 11 Bins. Bin 12 is empty since it is the last bin break. We will soon learn how to plot this data. If you would open the file in MS excel or run the `tail` function in R, you would see that the Time-AT-Depth (TAD) histogram data is stored in the same file.
-
-Now that we understand the formatting of the raw histogram file better, let's see how to import it properly for later operations and figures.  
-
-`RchivalTag` has its own functions to read, process plot histogram data. We will start with reading a histogram data file that comes with the package. 
-(Later we will also see how to generate histogram data from depth-temperature time series data)
-
-```{r}
-hist_dat_1 <- read_histos(hist_file)
-str(hist_dat_1,3)
-# head(hist_dat_1$TAD[[1]]$df)
-# tail(hist_dat_1$TAD[[1]]$df)
-# str(hist_dat_1,2)
-```
-We can see that the original dataframe was split into a list that contains two sublists:  
-$ TAD (Time At Depth)  
-$ TAT (Time At Temperature)
-
-Each sublist contains another* list which is named after the different specifiers of the tag. In our case: DeployID.15P1019_Ptt.104659
-
-<style> div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;} </style>
-<div class = "blue">
-The Ptt is the ARGOS identification number, the DeployID is in this case the Serial of the tag. Please note that Ptt and DeployID are often identical, since the Serial is not transmitted. This can be misleading since Ptts can be reused (whereas Serials are often unique). WC offers on their data portal to redefine the DeployID in the Metadata section. </div>
-
-(*Later we will learn how to combine histogram data from multiple tags. In such cases, the number of lists within the TAD and TAT sublists can increase further).
-
-We can see that the DeployID.15P1019_Ptt.104659-list contains two data objects:  
-1.  bin_breaks (a numeric vector that contains the bin breaks of the TAD or TAT histogram data)  
-2.  df (a data frame that holds all the TAD or TAT histogram data)
-
-```{r, collapse=TRUE}
-hist_dat_1$TAD$DeployID.15P1019_Ptt.104659$bin_breaks
-head(hist_dat_1$TAD$DeployID.15P1019_Ptt.104659$df)
-```
-Interestingly, stops now at Bin12 and includes some new columns: 
-  
-*  avg (which is the average depth or temperature inferred from the TAD/TAT data, respectively)  
-*  SD (the standard deviation of the TAD/TAT data)  
-*  nrec (the number of records)  
-*  duration (the summary period in hours, here 24h)  
-*  tstep (the time difference to the next record)  
-*  nperc_dat (the percentage of data available)  
-
-Since our tag started recording at 8am the first day holds roughly 66% of the data. In general, we don't like to include days with a lot of gaps in our histograms. This will become important when we construct histogram data from time series data since the latter can be quite "gappy".
-
-Now let's plot the TAD data:  
-```{r}
-hist_tad(hist_dat_1)
-```
-Nice, we can see that our tag had 15 days of 24h data and that the histogram is based on 1 tag.
-This specific tag spent quite some time at the surface. But attention! MiniPATs often continue to record once they poped-up, which means that this could be an artifact from the time the tag was actually floating at the surface.
-
-We will deal with this issue in a moment. For now, let's just do another plot with the TAT data:
-
-```{r, collapse=TRUE}
-par(mfrow=c(1,2)) ## splits the plotting window in 1 row and two columns
-hist_tad(hist_dat_1) 
-hist_tat(hist_dat_1)
-```
-
-#### The function arguments of hist_tad & hist_tat
-The hist_tad & hist_tat come with a bunch of arguments to edit the plot. Some of them you might know from other plotting functions.
-
-```{r, collapse=TRUE}
-args(hist_tad)
-```
-
-For example we could easily 
-
-*  change the color,
-*  add some space between the depth/temperature bins and 
-*  add the standard error instead of the standard deviation (default selection) as error bar: 
-
-```{r, collapse=TRUE}
-hist_tad(hist_dat_1, space=1, plot_se = T, col="darkblue") 
-```
-
-I will introduce further arguments in the remaining examples of this tutorial.
-
-#### Bin breaks
-The bin breaks of your Time-at-Depth and Time-at_Temperature histogram data were fixed during the programming stage. At this point, we can not change them (except if we have access to the corresponding time series data; Please see later examples). To highlight the importance of the bin breaks selection for the interpretation of our histogram data, let's load another test set:  
-```{r, collapse=TRUE}
-hist_dat_2 <- read_histos(system.file("example_files/104659b-Histos.csv",package="RchivalTag"))
-str(hist_dat_2,2)
-```
-
-This histogram data is actually from the same tag, but has different bin breaks. I generated this data to make you aware of the importance of your bin breaks when it comes to the interpretation of your results/plots.
-
-```{r, collapse=TRUE}
-hist_dat_2$TAD$DeployID.15P1019b_Ptt.104659b$bin_breaks # new data  
-hist_dat_1$TAD$DeployID.15P1019_Ptt.104659$bin_breaks # former data  
-```
-The new TAD data has 2 bin breaks less (the 5 and 300 m bin breaks).
-Let's plot it next to our former data set:
-
-```{r, collapse=TRUE}
-par(mfrow=c(1,2)) ## splits the plotting window in 1 row and two columns
-hist_tad(hist_dat_1) # former histogram data
-hist_tad(hist_dat_2) # new histogram data
-```
-
-#### How to combine and merge histogram data from several tags:
-A tagging study generally consists of more than one individual in order to get an idea of common behavior types of a given species/population. We might therefore be interested in combining and merging the data of several individuals. In case of the our histogram data, the two datasets above are a good starting point for such an analysis.
-Since both data sets are basically a list, the function `combine_histos` just combines the two lists.
-
-```{r, collapse=TRUE}
-hist_dat_combined <- combine_histos(hist_dat_1, hist_dat_2)
-str(hist_dat_combined,2)
-par(mfrow=c(2,2))
-hist_tad(hist_dat_combined, plot_ntags=F)
-hist_tat(hist_dat_combined, plot_ntags=F)
-```
-
-But how can we can produce one histogram figure of the entire merged data set?
-For this we need to merge the data with the function `merge_histos`.
-
-```{r, collapse=TRUE}
-hist_dat_merged <- merge_histos(hist_dat_combined,force_merge = FALSE)
-str(hist_dat_merged,2)
-par(mfrow=c(1,2))
-hist_tad(hist_dat_merged)
-```
-
-This is not exactly what I promised, since we still get 2 figures from the data.
-Note that in case of individuals with different bin breaks will be assigned to different groups. To avoid thus, we need to turn on the flag `force_merge=TRUE`. This option looks for common bin breaks of the different individuals and recombines the data accordingly, dropping non-shared bin breaks.
-
-```{r, collapse=TRUE}
-hist_dat_merged <- merge_histos(hist_dat_combined,force_merge = TRUE)
-par(mfrow=c(1,2))
-hist_tad(hist_dat_merged)
-```
-
-Note also that it is still possible to select a specific tag from a merged list. However, bin break changes (e.g. via `force_merge = TRUE`) in the merged list are permanent!
-
-```{r, collapse=TRUE}
-hist_tad(hist_dat_merged) # of all tags
-unique(hist_dat_merged$TAD$merged$df$DeployID) ## list unique tags in merged list
-hist_tad(hist_dat_merged, select_id = "15P1019b", select_from = 'DeployID') # of one tag
-```
-
-You might like to unmerge your data so that the histogram data is again separated by individual again (similar to the result of a `combine_histos` call). In this case, we can apply the `unmerge_histos` function. Again potential prior bin break changes (e.g. via `force_merge = TRUE`) are permanent and therefore persist in the unmerged data set:
-
-```{r, collapse=TRUE}
-str(hist_dat_merged,2)
-hist_dat_merged$TAD[[1]]$bin_breaks
-
-hists_unmerged <- unmerge_histos(hist_dat_merged)
-str(hists_unmerged,2)
-hists_unmerged$TAD[[1]]$bin_breaks
-hists_unmerged$TAD[[2]]$bin_breaks
-```
-
-## abacus plots on 24h histogram data coverage:
-Combined (not merged) 24h histogram data sets can also be used to illustrate the daily data coverage.
-For this purpose, `RchivalTag` comes with a function called `plot_data_coverage`, which can also be applied to other archival tagging data (i.e. light locations as well as time series data). However, the required input format of other valid data products is different and will introduced later. For now, let's combine our previous data that we like to analyze:
-
-
-```{r, collapse=TRUE}
-# Tag 1
-ts_file <- system.file("example_files/104659-Series.csv",package="RchivalTag")
-ts_df <- read_TS(ts_file)
-tad_breaks <- c(0, 2, 5, 10, 20, 50, 100, 200, 300, 400, 600, 2000)
-tat_breaks <- c(10,12,15,17,18,19,20,21,22,23,24,27)
-hists_ts <- ts2histos(ts_df, tad_breaks = tad_breaks)
-
-# Tag 2 (same as Tag 3)
-hist_dat_2 <- read_histos(system.file("example_files/104659b-Histos.csv",package="RchivalTag"))
-
-# Tag 3
-hist_file <- system.file("example_files/67851-12h-Histos.csv",package="RchivalTag")
-hist_24h <- read_histos(hist_file,min_perc=75)
-
-hist_dat_combined <- combine_histos(hist_dat_2, hists_ts)
-hist_dat_combined <- combine_histos(hist_dat_combined, hist_24h)
-```
-
-We also need to supply a meta file on the tag deployments (i.e. Tag Ptt and DeployID as well as the deployment start and end). In this example, we obtain this information from the histogram data.
-However, please note that it is more accurate to crossvalidate the deployment start and end dates via time series data, ARGOS positions etc and to supply the validated information as a csv file.
-
-```{r, collapse=TRUE}
-meta <- c()
-for(n in names(hist_dat_combined$TAD)){
-  add <- data.frame(DeployID=gsub("_Ptt","",strsplit(n,"\\.")[[1]][2]),
-                    Ptt=strsplit(n,"\\.")[[1]][3])
-  add$dep.date <- hist_dat_combined$TAD[[n]]$df$date[1]
-  add$pop.date <- tail(hist_dat_combined$TAD[[n]]$df$date,1)
-  meta <- rbind(meta,add)
-}
-meta
-```
-Deployment start and end dates need to be termed `dep.date` and `pop.date`, respectively. At least one more column to identify the tag (e.g. via its Serial or DeployID) are required. This column as well as other columns of the meta file can be added to the plot via the `fields` argument of the `plot_data_coverage` function.
-
-```{r, fig.width=12.5,fig.height=4, collapse=TRUE}
-plot_data_coverage(hist_dat_combined,type="tad",type2="nperc_dat",na.omit = F,meta=meta, 
-                   Identifier = "DeployID",fields=c("DeployID","Ptt"))
-```
-
-
-
-
-
-#### 6h/12h histogram data:
-As mentioned earlier, the summary period of the histogram data (and other summary data products for WC tags) can be defined during the tag programming stage as 6h, 12h, 24h. However, the selection of a higher resolution, also increases the amount of data that needs to be transmitted, which is generally limited by the battery capacity of the tag  and/or the satellite coverage at its transmission location. Especially when you select longer deployment periods and several data products, this could lead to very gappy data.
-Moreover, the timing of the 6h and 12h periods is often not related to the timing of sunrise and sunset (but to the UTC time), which makes them difficult to interpret. I would therefore not recommend to select such data. Please note that it is actually possible to estimate and plot day-night histograms from time series data. At the end of this tutorial we will learn how to do this
-The current version of `RchivalTag` merges the 6h and 12h histogram data to 24h periods. (Please recall: The column `nperc_dat` indicates the data coverage in percent.)
-
-```{r, collapse=TRUE}
-hist_file <- system.file("example_files/67851-12h-Histos.csv",package="RchivalTag")
-hist_24h <- read_histos(hist_file,min_perc=75)
-head(hist_24h$TAD$DeployID.67851_Ptt.67851$df)
-```
-
-However, it is possible to avoid this merge, and also to plot 12h histogram data side by side (back to back):
-```{r, collapse=TRUE}
-hist_12h <- read_histos(hist_file,min_perc=0)
-head(hist_12h$TAD$DeployID.67851_Ptt.67851$df)
-df <- hist_12h$TAD$DeployID.67851_Ptt.67851$df
-df <- df[which(df$tstep == 12),]
-df$tperiod <- "0:00 - 12:00"
-df$tperiod[grep("12:00:00",df$datetime)] <- "12:00 - 24:00"
-tad_breaks <- hist_12h$TAD$DeployID.67851_Ptt.67851$bin_breaks
-df$nperc_dat <- 100 # necessary to avoid error due to low data availability
-hist_tad(df, bin_breaks = tad_breaks, split_by = "tperiod")
-```
-
-To speed up the plotting and later data manipulation, we could also reassign the edited data frame to the histogram list:
-```{r, collapse=TRUE}
-hist_12h$TAD$DeployID.67851_Ptt.67851$df <- df
-#hist_tad(hist_12h, split_by = "tperiod")
-```
-
-#### How to convert time series data to histogram data:
-As mentioned earlier, it is possible to generate Time-at-Depth and Time-at-Temperature from (depth/temperature) time series data.
-To do so, we first need to load our data. `RchivalTag` has its own function for that. This function completes time series gaps with NA values to account for the data availability. We can see this immediately, when we check the first rows of our data:
-Since the tag has been deployed after midnight, the first depth and temperature records are all NAs.
-
-```{r, collapse=TRUE}
-ts_file <- system.file("example_files/104659-Series.csv",package="RchivalTag")
-ts_df <- read_TS(ts_file)
-head(ts_df)
-```
-Let's transform this to a 24h histogram:
-```{r, collapse=TRUE}
-tad_breaks <- c(0, 2, 5, 10, 20, 50, 100, 200, 300, 400, 600, 2000)
-tat_breaks <- c(10,12,15,17,18,19,20,21,22,23,24,27)
-hists_ts <- ts2histos(ts_df, tad_breaks = tad_breaks)
-hist_tad(hists_ts)  # plot time-at-depth data
-```
-Alternatively, we can directly plot the data from the time series data frame:
-```{r, collapse=TRUE}
-hist_tat(ts_df, bin_breaks = tat_breaks) # plot time-at-temperature data
-```
-
-## Day-Night back-to-back histograms from time series data:
-```{r, collapse=TRUE}
-ts_df$Lat <- 4; ts_df$Lon <- 42.5 ## required geolocations to estimate daytime
-ts_df2 <- classify_DayTime(get_DayTimeLimits(ts_df)) # estimate daytime
-head(ts_df2)
-
-hists_ts2 <- ts2histos(ts_df2, tad_breaks = tad_breaks, split_by = "daytime")
-hist_tad(hists_ts2,space=1)
-```
-  
-We can also do this conversion from within the `hist_tad/hist_tat` call.
-
-```{r, collapse=TRUE}
-hist_tat(ts_df2, bin_breaks = tat_breaks, split_by = "daytime", do_mid.ticks = FALSE)
-```
-
-#### Histogram vs Time series data - Some recommendations how to program your tag:
-Since we can convert time series data to histogram data and even split it into day-night periods, the selection of histogram files for tranmission becomes obsolete. At the same time, we can save significant battery capacities and thus improve the transmission success of other data products, including time series data. For long deployments, WC also offers to define a duty cycle by which the data gets transmitted (e.g. 3 days of data, 2 days of gaps) to save battery and thus transmission capacities. 
-Still, in some cases it might be beneficial to select histogram data over time series data for transmission (e.g. requires less ARGOS messages and thus less battery consuming, better coverage at long deployments, especially in areas of poor satellite coverage). I will give some further recommendation on how to program your tag in the next parts of this tutorial.
-
-Please bear this in mind, when you program your tag.
-
-
-
-
-
+# Introduction
+Visualizing data is a crucial step in analyzing and exploring data. During the last
+two decades the statistical programming language R has become a major tool for data
+analyses and visualization across different fields of science. However, creating figures
+ready for scientific publication can be a tricky and time consuming task.
+The oceanmap package provides some helpful functions to facilitate and optimize the
+visualization of geographic and oceanographic data, such as satellite and bathymetric
+data sets. Its major functions are
+
+* plotmap() and ggplotmap() to plot land masks
+* set.colorbar(), to define the colorbar (position, ticks, colormap)
+* v(), an optimized tool for creating image or contour plots from different data formats (matrix, array, raster, netcdf, binary)
+* figure(), to facilitate resizing and saving of figures in diverse formats (jpeg, png, eps, pdf and eps)
+
+These functions were written in a way that they do not require a large amount of their numerous arguments to be specified but still return nice plots. Each of these functions
+will be subsequently discussed.
+A closely related problem represents the extraction of spatial data at defined positions/areas. Some examples on this will be discussed in an extra section.
+
+# The plotmap-function
+Often it is required to add a land mask as geographical reference to an image- or scatter-
+plot. To add a landmask it is required to provide information about the region extent.
+As for the entire oceanmap-package, the idea of the plotmap-function is to reduce the
+user effort when creating figures. To allow a high level of user flexibility plotmap can
+produce a may by 5 different ways. By providing the required region extent as:
+
+1. geographical coordinates (longitude and latitude),
+2. a raster-object
+3. an extent-object
+4. a region-keyword
+5. or add a land mask to an existing plot
+
+Many additional arguments can passed by the user. The idea of a region-keyword
+(option 4) is to use a short character string instead of requiring axes limits. This keyword
+feature is also implemented in the v-function and permits here the rapid visualization
+of subregions of interest (e.g. from a raster object). Region keywords can be set up by
+the add.region-function. The latter function is interactive and also defines the default
+colorbar placement that is further used by the v-function.
 
 
