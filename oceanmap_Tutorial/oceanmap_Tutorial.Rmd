@@ -160,7 +160,8 @@ height <- dev.size() [2]
 
 do.save <- TRUE ## do NOT open a plotting window, but save figure internally
 
-figure("Gulf_of_Lions_extended", do.save=do.save, width=width, height=height, type="pdf")
+figure("Gulf_of_Lions_extended", do.save=do.save, 
+       width=width, height=height, type="pdf")
 plotmap("lion",col.bg='darkblue' ,grid=FALSE)
 close_fig(do.save)
 ```
@@ -274,7 +275,7 @@ print(dat)
 
 
 ```{r, fig.width = 6, fig.height = 6,results="hide"}
-v(dat, main="Raster-object", cbpos='r',subplot=TRUE)
+v(dat, main="Raster-object", cbpos='r')
 ```
 
 ## v() and nefcdf-files
@@ -292,7 +293,7 @@ print(ncdf)
 
 ```{r, fig.width = 6, fig.height = 6,results="hide"}
 par(mar=c(5,5,5,5))
-v(obj = ncdf, cbpos="r",subplot=TRUE)
+v(obj = ncdf, cbpos="r")
 ```
 
 
@@ -306,9 +307,10 @@ ATTENTION: nc2raster()-calls require a "varname" selection if the netcdf-file ho
 
 ```{r, fig.width = 6, fig.height = 6,results="hide"}
 setwd(system.file("test_files", package="oceanmap"))
-## attention you may have to increase margin spacings for correct colorbar text rendering
+## attention you may have to increase margin spacings 
+## for correct colorbar text rendering
 par(mar=c(5,5,5,5)) 
-v(nc, cbpos="r",subplot=TRUE) # plot RasterStack object
+v(nc, cbpos="r") # plot RasterStack object
 ```
 
 
@@ -316,8 +318,8 @@ v(nc, cbpos="r",subplot=TRUE) # plot RasterStack object
 ```{r, fig.width = 6, fig.height = 12,results="hide"}
 setwd(system.file("test_files", package="oceanmap"))
 par(mfrow=c(2,1),mar=c(5,5,5,5))
-v(ncfiles[1], cbpos="r", subplot = TRUE)
-v(ncfiles[1], cbpos="r", replace.na=TRUE, subplot = TRUE)
+v(ncfiles[1], cbpos="r")
+v(ncfiles[1], cbpos="r", replace.na=TRUE)
 ```
 
 
@@ -326,7 +328,7 @@ v(ncfiles[1], cbpos="r", replace.na=TRUE, subplot = TRUE)
 ```{r, fig.width = 12, fig.height = 12,results="hide"}
 setwd(system.file("test_files", package="oceanmap"))
 par(mfrow=c(2,2),mar=c(5,5,5,5))
-v(ncfiles[1], t=1:4, cbpos="r", subplot = TRUE)
+v(ncfiles[1], t=1:4, cbpos="r")
 ```
 
 
@@ -354,7 +356,7 @@ done the same way, but much faster with the function disaggregate() of the raste
 ```{r, results="hide", fig.width = 6, fig.height = 6}
 lon <- c(9, 31)
 lat <- c(53.5, 66)
-get.bathy(lon=lon, lat=lat, main="Baltic Sea", cbpos='r', subplot = TRUE)
+get.bathy(lon=lon, lat=lat, main="Baltic Sea", cbpos='r')
 ```
 
 
@@ -362,9 +364,9 @@ get.bathy(lon=lon, lat=lat, main="Baltic Sea", cbpos='r', subplot = TRUE)
 ```{r, results="hide", fig.width = 8, fig.height = 10}
 setwd(system.file("test_files", package="oceanmap"))
 par(mfrow=c(2,1))
-bathy <- get.bathy("medw4", terrain=T, res=10, keep=T, visualize=T, subplot = TRUE, grid=F)
+bathy <- get.bathy("medw4", terrain=T, res=10, keep=T, visualize=T, grid=F)
 # load('bathy_medw4_res.3.dat',verbose = T); bathy <- h
-v(bathy, param="bathy", subplot = TRUE, terrain=F, levels=c(200 ,2000)) # show contours
+v(bathy, param="bathy", terrain=F, levels=c(200 ,2000)) # show contours
 ```
 
 How to produce only contour plots from bathymetry data: set v_image=FALSE
@@ -373,10 +375,10 @@ How to produce only contour plots from bathymetry data: set v_image=FALSE
 ```{r,results="hide", fig.width = 10, fig.height = 15}
 par(mfrow=c(2,1))
 h <- get.bathy("lion",terrain=FALSE, res=10, visualize=TRUE, 
-               subplot=TRUE, v_image = FALSE, levels=c(200,2000) )
+               v_image = FALSE, levels=c(200,2000) )
 
 ## use v-function for same plot but on subregion:
-v(h,v_area = "survey", param="bathy", subplot=TRUE, 
+v(h,v_area = "survey", param="bathy", 
   v_image = FALSE, levels=c(200,2000))
 ```
 
@@ -387,7 +389,7 @@ v(h,v_area = "survey", param="bathy", subplot=TRUE,
 owd <- getwd()
 setwd(system.file("test_files", package="oceanmap"))
 gz.files <- Sys.glob('*.gz')
-# v(gz.files[2],subplot=F) ## plot content of gz-file
+# v(gz.files[2]) ## plot content of gz-file
 ```
 
 ## load and plot gz-file as a Raster-object (standard spatial object in R):
@@ -397,8 +399,8 @@ gz.files <- Sys.glob('*.gz')
 ```{r}
 # obj <- readbin(gz.files[2],area='lion')
 # par (mfrow=c(1,2))
-# v(obj ,param="sst",subplot = TRUE)
-# v(obj,param="Temp",subplot = TRUE) ## note unset "pal" (colormap) for unkown "param"-values!
+# v(obj ,param="sst")
+# v(obj,param="Temp") ## note unset "pal" (colormap) for unkown "param"-values!
 ```
 
 # available colormaps
@@ -415,10 +417,10 @@ setwd(system.file("test_files", package="oceanmap"))
 gz.files <- Sys.glob('*.gz')
 # figure(width=15,height=15)
 par(mfrow=c(4,5))
-# for(n in names(cmap)) v(gz.files[2], v_area='lion', subplot=TRUE, pal=n, adaptive.vals=TRUE, main=n)
+# for(n in names(cmap)) v(gz.files[2], v_area='lion', pal=n, adaptive.vals=TRUE, main=n)
 ## define new color maps from blue to red to white:
 n <- colorRampPalette(c('blue','red','white')) (100)
-# v(gz.files[2], v_area='lion', subplot=TRUE, pal=n, adaptive.vals=TRUE, main="own colormap")
+# v(gz.files[2], v_area='lion', pal=n, adaptive.vals=TRUE, main="own colormap")
 ```
 
 # available oceanographic parameters
@@ -435,12 +437,12 @@ setwd(system.file("test_files", package="oceanmap"))
 
 # figure (width=12, height=6.2)
 par(mfrow=c(2,3))
-# v('*sst2*707*' ,v_area="medw4",main="sst", subplot=TRUE)
-# v('*chla*531*' ,v_area="medw4" ,main="chla", subplot=TRUE)
-# v('*chlagrad*' ,v_area="medw4" ,main="chlagrad", subplot=TRUE)
-# v('?*p100*' ,v_area="medw4",main="p100 (oceanic fronts)",subplot=TRUE)
-# v('*xsla*',v_area="medw4",main="sla",subplot=TRUE)
-# h <- get.bathy("medw4",visualize=TRUE,terrain=F,res=4, subplot=TRUE, main="bathy")
+# v('*sst2*707*' ,v_area="medw4",main="sst")
+# v('*chla*531*' ,v_area="medw4" ,main="chla")
+# v('*chlagrad*' ,v_area="medw4" ,main="chlagrad")
+# v('?*p100*' ,v_area="medw4",main="p100 (oceanic fronts)")
+# v('*xsla*',v_area="medw4",main="sla")
+# h <- get.bathy("medw4",visualize=TRUE,terrain=F,res=4, main="bathy")
 ```
 
 # available region keywords & definitions
@@ -531,7 +533,7 @@ implemented in the sp and maptools packages (in particular with the function ext
 Here some examples, for points, polygons and circles:
 
 ```{r, warning=FALSE, fig.width=10, fig.height=10}
-bathy <- get.bathy('lion',subplot=TRUE,res=10) # get bathymetry
+bathy <- get.bathy('lion',res=10) # get bathymetry
 
 #' extract values
 # Points <- locator()
