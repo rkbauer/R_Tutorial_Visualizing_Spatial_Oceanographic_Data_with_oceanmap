@@ -23,7 +23,8 @@ output:
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, 
+                      root.dir = system.file("test_files", package="oceanmap"))
 ```
 
 ### Getting started:
@@ -103,14 +104,15 @@ r <- raster(ext)
 plotmap(r, main="Mediterranean Sea") # raster-object
 ```
 
-## d) plot landmask of the Mediterranean Sea by using a region label:
-```{r,echo=FALSE}
-plotmap('med4', main="Mediterranean Sea") # region-label
-# regions() ## check preinstalled region label
+#### d) plot landmask of the Mediterranean Sea by using a region label:
+```{r}
+# run regions() to check pre-installed region labels
+# (we will introduce later how to define new region definitions)
+plotmap('med4', main="Mediterranean Sea") # region label for the Mediterranean
 ```
 
 
-## e) add landmask to an existing plot:
+#### e) add landmask to an existing plot:
 ```{r}
 plot(3.7008, 43.4079, xlim=lon, ylim=lat)
 plotmap(add=T)
@@ -121,7 +123,8 @@ points(3.7008, 43.4079, pch=19)
 ```{r,fig.width=10,fig.height=15}
 par(mfrow=c(2, 1))
 plotmap('medw4', main="Western Mediterranean Sea",col.bg="darkblue")
-plotmap('medw4', main="Western Mediterranean Sea", bwd=3, border='grey', grid=FALSE)
+plotmap('medw4', main="Western Mediterranean Sea", bwd=3, border='grey', 
+        grid=FALSE)
 ```
 
 
@@ -142,7 +145,7 @@ Formats are selected according to the type statement (e.g. type=jpeg).
 ATTENTION: To save plots with figure(), the device needs to be closed by a seperate
 function(dev.off() or close_fig(/TRUE))
 
-## Example 3: plotmap() and figure()
+### Example 3: plotmap() and figure()
 ```{r, eval=FALSE, message=FALSE, error=FALSE, warning=FALSE}
 do.save <- FALSE ## open a plotting window
 figure("Gulf_of_Lions_extended", do.save=do.save, width=5, height=5,type="pdf")
@@ -150,7 +153,7 @@ plotmap("lion",col.bg='darkblue' ,grid=FALSE)
 close_fig(do.save)
 ```
 
-## now resize figure manually and get new figure dimensions:
+#### now resize figure manually and get new figure dimensions:
 ```{r, eval=FALSE, message=FALSE, error=FALSE, warning=FALSE}
 width <- dev.size() [1]
 height <- dev.size() [2]
@@ -172,7 +175,7 @@ longitude values. In general, xlim and Jon-values < 0 or > 180 are always treate
 longitudes. Accordingly, maps are drawn from East fo West if xlim[1] > xlim[2] and from
 West to East if xlim[2] > xlim[1]. Here an easy example:
 
-#### Example 4: between hemispheres
+### Example 4: between hemispheres
 ```{r, fig.width = 10, fig.height = 10}
 par(mfrow=c(2,1))
 plotmap(lon=c(80, -120), lat=c(-50, 10), main="map from East to West")
@@ -210,7 +213,7 @@ regions.
 Note that the colormap and ticks of the colorbar can be defined through additional
 arguments of set.colorbar()
 
-## Example 1: plot colorbars manually
+### Example 1: plot colorbars manually
 ```{r, results='hide',fig.width=6,fig.height=6}
 par(mar=c(8,8,8,8))
 plot(0.5,0.5,xlim=c(0,1),ylim=c(0,1))
@@ -220,7 +223,7 @@ set.colorbar(cbx=c(0, 1), cby=c(1.2, 1.3)) # top
 set.colorbar(cby=c(0, 1), cbx=c(1.2, 1.3)) # right
 ```
 
-## Example 2: use cbpos
+### Example 2: use cbpos
 ```{r, results='hide',fig.width=6,fig.height=6}
 par(mar=c(8,8,8,8))
 plot(0.5,0.5,xlim=c(0,1),ylim=c(0,1))
@@ -230,7 +233,7 @@ set.colorbar(cbpos='t') # top
 set.colorbar(cbpos='r') # right
 ```
 
-# # Example 3: interactive placement
+### Example 3: interactive placement
 ```{r, eval=FALSE, message=FALSE, error=FALSE, warning=FALSE}
 par(mar=c(8,8,8,8))
 plot(0.5,0.5,xlim=c(0,1),ylim=c(0,1))
@@ -262,9 +265,9 @@ examples to visualize such objects with v().
 
 ###  Example 1: load & plot a sample Raster-object
 
-```{r}
+```{r,collapse=T}
 setwd(system.file("test_files", package="oceanmap"))
-load("medw4_modis_sst2_4km_1d_20020705_20020705.r2010.0.qual0.Rdata", verbose=TRUE)
+load("medw4_modis_sst2_4km_1d_20020705_20020705.r2010.0.qual0.Rdata")
 dat <- raster::crop(dat,extent(c(0,10,40,44))) ## crop data, xlim/ylim not yet implemented in v()
 print(dat)
 ```
@@ -303,12 +306,13 @@ ATTENTION: nc2raster()-calls require a "varname" selection if the netcdf-file ho
 
 ```{r, fig.width = 6, fig.height = 6,results="hide"}
 setwd(system.file("test_files", package="oceanmap"))
-par(mar=c(5,5,5,5))
+## attention you may have to increase margin spacings for correct colorbar text rendering
+par(mar=c(5,5,5,5)) 
 v(nc, cbpos="r",subplot=TRUE) # plot RasterStack object
 ```
 
 
-### option c) plot netcdf-file directly
+#### option c) plot netcdf-file directly
 ```{r, fig.width = 6, fig.height = 12,results="hide"}
 setwd(system.file("test_files", package="oceanmap"))
 par(mfrow=c(2,1),mar=c(5,5,5,5))
@@ -347,7 +351,7 @@ done the same way, but much faster with the function disaggregate() of the raste
 ## calling get.bathy() with coordinates (lon, lat):
 
 ### Example 1: load & plot bathymetry of the Baltic Sea, defined by longitudes and latitudes
-```{r, echo=FALSE, results="hide", fig.width = 6, fig.height = 6}
+```{r, results="hide", fig.width = 6, fig.height = 6}
 lon <- c(9, 31)
 lat <- c(53.5, 66)
 get.bathy(lon=lon, lat=lat, main="Baltic Sea", cbpos='r', subplot = TRUE)
@@ -355,7 +359,7 @@ get.bathy(lon=lon, lat=lat, main="Baltic Sea", cbpos='r', subplot = TRUE)
 
 
 ### Example 2: load & plot bathymetry data from the NOAA-ETOPO1 database
-```{r, echo=FALSE, results="hide", fig.width = 8, fig.height = 10}
+```{r, results="hide", fig.width = 8, fig.height = 10}
 setwd(system.file("test_files", package="oceanmap"))
 par(mfrow=c(2,1))
 bathy <- get.bathy("medw4", terrain=T, res=10, keep=T, visualize=T, subplot = TRUE, grid=F)
@@ -368,20 +372,22 @@ How to produce only contour plots from bathymetry data: set v_image=FALSE
 #### b) only contour lines:
 ```{r,results="hide", fig.width = 10, fig.height = 15}
 par(mfrow=c(2,1))
-h <- get.bathy("lion",terrain=FALSE, res=10, visualize=TRUE, subplot=TRUE, v_image = FALSE, levels=c(200,2000) )
+h <- get.bathy("lion",terrain=FALSE, res=10, visualize=TRUE, 
+               subplot=TRUE, v_image = FALSE, levels=c(200,2000) )
 
 ## use v-function for same plot but on subregion:
-v(h,v_area = "survey", param="bathy", subplot=TRUE, v_image = FALSE, levels=c(200,2000))
+v(h,v_area = "survey", param="bathy", subplot=TRUE, 
+  v_image = FALSE, levels=c(200,2000))
 ```
 
 # v() and gz-files:
 
-## Example 3: plot sample-'.gz'-file
+### Example 3: plot sample-'.gz'-file
 ```{r}
 owd <- getwd()
 setwd(system.file("test_files", package="oceanmap"))
 gz.files <- Sys.glob('*.gz')
-# v(gz.files[2]) ## plot content of gz-file
+# v(gz.files[2],subplot=F) ## plot content of gz-file
 ```
 
 ## load and plot gz-file as a Raster-object (standard spatial object in R):
@@ -524,7 +530,7 @@ Extracting spatial data from Raster-objects can be easily done with a bunch of f
 implemented in the sp and maptools packages (in particular with the function extract).
 Here some examples, for points, polygons and circles:
 
-```{r, eval=FALSE, message=FALSE, error=FALSE, warning=FALSE, fig.width=10, fig.height=10}
+```{r, warning=FALSE, fig.width=10, fig.height=10}
 bathy <- get.bathy('lion',subplot=TRUE,res=10) # get bathymetry
 
 #' extract values
