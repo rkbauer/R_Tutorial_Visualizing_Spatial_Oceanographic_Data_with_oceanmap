@@ -331,14 +331,35 @@ par(mfrow=c(2,2),mar=c(5,5,5,5))
 v(ncfiles[1], t=1:4, cbpos="r")
 ```
 
+## ggplotmap and raster files
+
+The newest version of oceanmap includes now a gglplot and plotly-version of the base-function plotmap(). You can use gglplotmap() to create land masks, which you can add to existing ggplots. This is particularly helpful when you are dealing with rasterized data:
+```{r,results="hide"}
+library(dplyr)
+library(ggplot2)
+setwd(system.file("test_files", package="oceanmap"))
+nc <- nc2raster(ncfiles[1])
+rs2df <- nc[[1]] %>% ## take first layer
+         rasterToPoints() %>% ## convert raster to xyz matrix
+         as.data.frame() ## convert to data frame
+names(rs2df)[3] <- "value" ## reset 
+ggobj <- ggplot() + geom_raster(data = rs2df, aes(x=x,y=y,fill=value)) 
+ggobj_with_land_mask <- ggplotmap(add_to = ggobj)
+ggobj_with_land_mask
+```
+
+Now let's convert this figure into an interative visualization using the ggplotmaply-function:
+```{r}
+ggplotmaply(ggobj_with_land_mask)
+```
+
+Although the remaining tutorial will focus on the base-functions of oceanmap, you can easily visualize the example data below with ggplotmap() by using swapping the rasterized netcdf data in ggplotnmap()-example above by the rasterized example data below (E.g. the get.bathy() from the next section creates directly a raster object.)
+
 
 ## v() and get.bathy():
 
-Gathering oceanographic data is not yet implemented in oceanmap. However, bathymet-
-ric data can already be obtained from the NOAA ETOPO1! data base (https: //data.noaa.
-gov/dataset/etopoi-1-arc-minute-global-relief-model) thanks to the get.bathy() function
-of oceanmap. In order to download the bathymetry of a region, this function requires
-information on the region extent that can be provided as
+Gathering oceanographic data is not yet implemented in oceanmap. However, bathymetric data can already be obtained from the NOAA ETOPO1! data base https://sos.noaa.gov/datasets/etopo1-topography-and-bathymetry/) thanks to the get.bathy() function
+of oceanmap. In order to download the "bedrock" bathymetry of a region, this function requires information on the region extent that can be provided as
 
 1. longitude and latitude coordinates (lon, lat)
 2. an extent (raster)-object
